@@ -82,18 +82,26 @@ export default function Component() {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.code === 'Space') {
         newCharacters();
+        const ref = doc(db, "hi", "hi");
+        console.log("hi")
+        setDoc(ref, {
+
+          hi: "hi"
+        }, { merge: true });
       }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
     };
+
   }, []);
 
 
   async function addToFirestore(skill: string, even: boolean, winner: string, loser: string) {
     if (!db) return;
     const skillDocRef = doc(db, "skills", skill);
+
 
     if (!even) {
       try {
@@ -181,7 +189,7 @@ export default function Component() {
 
 
       const thisDate = new Date();
-      fetch("https://discord.com/api/webhooks/1284975432529346721/lbicsDRwzKbyg1Ge70bkYIsN_oYazPKSokc2T9lGiKCaCCWsHEsOFeIsIW5Y-Ze2MVtt", {
+      fetch("https://discord.com/api/webhooks/1327252920542035969/2mfY-wYGt7HlyBPcFv5zDfrkr0fWNCJMyP12b2Y19qvxJc1LEBKeI_SAWJkw_LLmjt36", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

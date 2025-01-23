@@ -1,0 +1,7 @@
+{
+    "cursor.composer.cmdPFilePicker2": true,
+    "keyboard.touchbar.enabled": true,
+    "terminal.integrated.commandsToSkipShell": [
+        "- workbench.actionquickOpen Ctrl+P"
+    ]
+}

@@ -1,4 +1,4 @@
-import type {Config} from "tailwindcss";
+import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
@@ -14,25 +14,18 @@ const config: Config = {
       },
     },
     fontFamily: {
+      roboto: ['var(--font-roboto)'],
+      opensans: ['var(--font-opensans)'],
+      lato: ['var(--font-lato)'],
       sans: [
-        "var(--font-geist-sans)",
-        "system-ui",
-        "-apple-system",
-        "BlinkMacSystemFont",
-        "Segoe UI",
-        "Roboto",
-        "Helvetica",
-        "Arial",
-        "sans-serif",
-      ],
-      mono: [
-        "var(--font-geist-mono)",
-        "Menlo",
-        "Monaco",
-        "Consolas",
-        "Liberation Mono",
-        "Courier New",
-        "monospace",
+        'var(--font-roboto)',
+        'Roboto',
+        'system-ui',
+        '-apple-system',
+        'BlinkMacSystemFont',
+        'Segoe UI',
+        'Arial',
+        'sans-serif',
       ],
     }
   },
