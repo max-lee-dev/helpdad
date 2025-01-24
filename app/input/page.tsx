@@ -2,80 +2,88 @@
 import "@/app/globals.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { FaCalendar, FaMoneyBill } from 'react-icons/fa';
 import { useState, useEffect } from "react";
-import { addEntry, getEntries, toastConfig } from "@/app/utils/utils";
+import { addEntry, deleteEntry, getIDs, toastConfig, convertFirestoreDateToString } from "@/app/utils/utils";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AddNewIdModal from "@/app/components/AddNewIdModal";
-import { FaPencil } from "react-icons/fa6";
-import { BiCalendar, BiPencil } from "react-icons/bi";
+import { BiCalendar, BiPlus, BiTrash } from "react-icons/bi";
+import { Entry, ID } from "@/app/utils/types";
 
-interface Entry {
-  id: number;
-  cost: number;
-  timesEntered: number;
-  date: Date;
-}
-
-interface FirebaseEntry {
-  id: string;
-  cost?: number;
-  timesEntered?: number;
-  date?: string;
-}
 
 export default function Input() {
   const [selectedId, setSelectedId] = useState<number>(0);
   const [cost, setCost] = useState<number>(0);
-  const [entries, setEntries] = useState<Entry[]>([]);
+  const [sessionEntries, setSessionEntries] = useState<Entry[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [newId, setNewId] = useState<number>(0);
   const [idsList, setIds] = useState<number[]>([]);
+  const [IDInfos, setIDInfos] = useState<ID[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
 
-  useEffect(() => {
-    getEntries().then((e: FirebaseEntry[]) => {
-      const tempList = e.map((doc) => ({
-        id: parseInt(doc.id),
-        cost: doc.cost ?? 0,
-        timesEntered: doc.timesEntered ?? 0,
-        date: doc.date ? new Date(doc.date) : new Date()
-      }));
-      setEntries(tempList);
-      setIds(tempList.map((doc) => doc.id));
-      setSelectedId(tempList[0].id);
-    });
-  }, [showModal]);
+  const isValidDate = (date: Date | null) => date instanceof Date && !isNaN(date.getTime());
 
   useEffect(() => {
-    const selectedEntry = entries.find((entry) => entry.id === selectedId);
-    setCost(selectedEntry?.cost || 0);
-    setSelectedDate(selectedEntry?.date || new Date());
-  }, [selectedId]);
+    try {
+      getIDs().then((e: ID[]) => {
+        if (e.length === 0) {
+          toast.error("No entries found", toastConfig);
+          return;
+        }
+        const tempList = e.map((doc) => ({
+          id: doc.id,
+          cost: doc.cost ?? 0,
+          timesEntered: doc.timesEntered ?? 0,
+          date: new Date(doc.date),
+          entries: doc.entries.map(entry => ({
+            ...entry,
+            date: new Date(entry.date)
+          })) ?? []
+        }));
+        setIDInfos(tempList);
+        setCost(40);
+        setIds(tempList.map((doc) => doc.id));
+        setSelectedId(tempList[0].id);
+
+        const entries = tempList.map((doc) => doc.entries).flat();
+        setSessionEntries(entries);
+      });
+    } catch (error) {
+      console.error("Error getting entries:", error);
+    }
+  }, [setIDInfos, setCost, setIds, setSelectedId, setSessionEntries]); // Added necessary dependencies
+
+  useEffect(() => {
+    const selectedEntry = IDInfos.find((entry) => entry.id === selectedId);
+
+    if (selectedEntry) {
+      setCost(selectedEntry?.cost || 0);
+      setSelectedDate(selectedEntry?.date as Date || new Date());
+    }
+  }, [selectedId, IDInfos]); // Added IDInfos to dependencies
 
   const handleSubmit = () => {
-    if (selectedDate) {
-      addEntry(selectedId, cost, selectedDate);
-      const entryIndex = entries.findIndex(entry => entry.id === selectedId);
-      let updatedEntries = [...entries];
+    const dateToUse = selectedDate || new Date();
 
-      if (entryIndex !== -1) {
-        updatedEntries[entryIndex] = {
-          ...updatedEntries[entryIndex],
-          cost,
-          date: selectedDate,
-          timesEntered: updatedEntries[entryIndex].timesEntered + 1
-        };
-      } else {
-        updatedEntries.push({ id: selectedId, cost, timesEntered: 1, date: selectedDate });
-      }
+    // Log the date being used
+    console.log("Date being used:", dateToUse.toLocaleDateString());
 
-      setEntries(updatedEntries);
-      toast.success('Entry added successfully!', toastConfig);
-    } else {
-      toast.error('Please select a date.', toastConfig);
+    if (!isValidDate(dateToUse)) {
+      toast.error('Invalid date selected.', toastConfig);
+      console.error("Invalid date:", dateToUse);
+      return;
     }
+
+    const UID = Math.random().toString(36).substr(2, 9);
+    console.log("UID:", UID);
+    addEntry(selectedId, cost, dateToUse, UID); // add a singular entry
+
+
+    // frontend, update the UI to show responsiveness
+    const updatedEntries = [...sessionEntries, { id: selectedId, cost: cost, date: dateToUse, timesEntered: 1, entryID: UID }];
+
+    setSessionEntries(updatedEntries);
+    toast.success('Entry added successfully!', toastConfig);
   }
 
   return (
@@ -98,7 +106,7 @@ export default function Input() {
                   <select
                     value={selectedId}
                     onChange={(e) => setSelectedId(parseInt(e.target.value))}
-                    className="w-full rounded-md text-black">
+                    className="w-fit rounded-md text-black">
                     {idsList.map((id) => (
                       <option key={id} value={id}>
                         {id}
@@ -106,12 +114,12 @@ export default function Input() {
                     ))}
                   </select>
                 </div>
-                <div className="border-l border-gray-300 border border-[0.5px] h-10 ml-6 " />
+                <div className="border-l border-gray-300 border border-[0.5px] h-10 ml-5 " />
                 <button
-                  className="mr-4 text-md"
+                  className="mr-3 text-md"
                   onClick={() => setShowModal(true)}
                 >
-                  <BiPencil />
+                  <BiPlus />
                 </button>
               </div>
             </div>
@@ -146,12 +154,15 @@ export default function Input() {
           </div>
           <div className="flex w-40 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 items-center mt-4">
             <div className="ml-2 flex flex-col">
-              <p className="text-sm text-gray-500">Selected Date:</p>
+              <p className="text-sm text-gray-500">Date:</p>
               <DatePicker
                 selected={selectedDate}
-                onChange={(date: Date | null) => setSelectedDate(date)}
-                dateFormat="MM/dd"
-                className="w-full"
+                onChange={(date: Date | null) => {
+
+                  setSelectedDate(date);
+                }}
+                dateFormat="MM/dd/yyyy"
+                className=" w-full text-black  rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
               />
             </div>
             <div className="border-l border-gray-300 border border-[0.5px] h-11 mr-3 " />
@@ -169,15 +180,21 @@ export default function Input() {
         </button>
       </div>
       <div className="flex flex-col items-center justify-center mt-8">
-        <button
-          onClick={getEntries}
-          className="p-2 w-full bg-black text-white rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500">
-          Get Entries
-        </button>
+
         <div className="flex text-black flex-col items-center justify-center mt-4">
-          {entries.map((entry) => (
+          {sessionEntries.map((entry) => (
             <div key={entry.id} className="bg-white p-2 rounded-md shadow-md mb-2 w-full text-center">
-              {entry.id} - ${entry.cost} - {entry.timesEntered} - {entry.date.toLocaleDateString()}
+              <div className="flex flex-row justify-between w-full">
+                #{entry.id}: ${entry.cost} - {convertFirestoreDateToString(entry.date)}
+                <button
+                  onClick={() => {
+                    deleteEntry(entry.id, entry.entryID);
+                    setSessionEntries(sessionEntries.filter((e) => e.entryID !== entry.entryID));
+                  }}
+                  className="text-black px-1 mx-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                  <BiTrash className="text-md" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

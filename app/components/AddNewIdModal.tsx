@@ -1,105 +1,93 @@
 import React, { useState } from 'react';
-import { addEntry, updateEntry } from "@/app/utils/utils";
+import { AddID } from "@/app/utils/utils";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 interface AddNewIdModalProps {
   newId: number;
-  setNewId: React.Dispatch<React.SetStateAction<number>>;
-  setIds: React.Dispatch<React.SetStateAction<number[]>>;
+  setNewId: (id: number) => void;
+  setIds: (ids: number[]) => void;
   idsList: number[];
-  setSelectedId: React.Dispatch<React.SetStateAction<number>>;
-  setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setSelectedId: (id: number) => void;
+  setShowModal: (show: boolean) => void;
 }
 
-const AddNewIdModal: React.FC<AddNewIdModalProps> = ({ newId, setNewId, setIds, idsList, setSelectedId, setShowModal }) => {
-  const [newCost, setNewCost] = useState(0);
+export default function AddNewIdModal({
+  newId,
+  setNewId,
+  setIds,
+  idsList,
+  setSelectedId,
+  setShowModal,
+}: AddNewIdModalProps) {
+  const [newCost, setNewCost] = useState<number>(0);
   const [newDate, setNewDate] = useState<Date | null>(new Date());
 
+  const isValidDate = (date: Date | null) => date instanceof Date && !isNaN(date.getTime());
+
   const handleAddNewId = async () => {
+    const dateToUse = new Date || new Date();
+    if (!isValidDate(dateToUse)) {
+      console.error("Invalid date:", dateToUse);
+      return;
+    }
+
     if (newId && newCost) {
       try {
         if (!idsList.includes(newId)) {
-          await addEntry(newId, newCost, newDate);
+          const UID = Math.random().toString(36).substr(2, 9);
+          await AddID(newId, newCost, dateToUse, UID);
           setIds([...idsList, newId]);
-        } else {
-          // update this entry
-          await updateEntry(newId, newCost, newDate);
-        }
+          setSelectedId(newId); // Select the newly added ID
+          // also add an entry
 
-        setSelectedId(newId);
+        }
         setShowModal(false);
       } catch (error) {
-        alert("Failed to add entry to the database");
+        console.error("Error adding/updating entry:", error);
       }
-    } else {
-      alert("ID is invalid or amount is missing");
-    }
-  };
-
-  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      setShowModal(false);
     }
   };
 
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={handleBackgroundClick}
+      onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
     >
       <div className="bg-white p-4 rounded-md shadow-md z-60">
-        <h2 className="text-xl font-bold mb-4">Add/Update ID</h2>
-
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-500 mb-2">ID</label>
-          <input
-            type="text"
-            value={newId}
-            onChange={(e) => setNewId(parseInt(e.target.value))}
-            placeholder="Enter new ID"
-            className="p-2 text-black border border-gray-300 rounded-md mb-4 w-full"
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-500 mb-2">Amount</label>
-          <input
-            type="text"
-            value={newCost}
-            onChange={(e) => setNewCost(parseInt(e.target.value))}
-            placeholder="Enter amount"
-            className="p-2 text-black border border-gray-300 rounded-md mb-4 w-full"
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <label className="text-sm text-gray-500 mb-2">Date</label>
-          <DatePicker
-            selected={newDate}
-            dateFormat="MM/dd"
-            onChange={(date: Date | null) => setNewDate(date)}
-            className="p-2 text-black border border-gray-300 rounded-md mb-4 w-full"
-          />
-        </div>
-
-        <div className="flex justify-end space-x-2">
-          <button
-            onClick={() => setShowModal(false)}
-            className="px-4 py-2 bg-gray-500 text-white rounded-md"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleAddNewId}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md"
-          >
+        <h2 className="text-xl font-bold mb-4">Add New ID</h2>
+        <label className="block text-sm font-medium text-gray-700">New ID</label>
+        <input
+          type="text"
+          value={newId}
+          onChange={(e) => setNewId(parseInt(e.target.value))}
+          className="p-2 text-black border border-gray-300 rounded-md"
+          placeholder="New ID"
+        />
+        <label className="block text-sm font-medium text-gray-700 mt-2">Cost</label>
+        <input
+          type="number"
+          value={newCost}
+          onChange={(e) => setNewCost(Number(e.target.value))}
+          className="p-2 text-black border border-gray-300 rounded-md mt-1"
+          placeholder="Cost"
+        />
+        <label className="block text-sm font-medium text-gray-700 mt-4">Date</label>
+        <DatePicker
+          selected={newDate}
+          onChange={(date: Date | null) => setNewDate(date)}
+          dateFormat="MM/dd/yyyy"
+          className="mt-1 p-2 pl-8 w-40 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+        />
+        <div className="flex gap-2 mt-2">
+          <button onClick={handleAddNewId} className="p-2 bg-black text-white rounded-md">
             Add
+          </button>
+          <button onClick={() => setShowModal(false)} className="p-2 bg-gray-500 text-white rounded-md">
+            Cancel
           </button>
         </div>
       </div>
-    </div >
+    </div>
   );
-};
-
-export default AddNewIdModal;
+}
