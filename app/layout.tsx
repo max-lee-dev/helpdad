@@ -16,26 +16,31 @@ const geistMono = localFont({
 });
 
 // Add new Google Fonts
+
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
 const roboto = Roboto({
-  weight: ['300', '400', '500', '700'],
   subsets: ['latin'],
+
+  weight: ['100', '300', '400', '500', '700', '900'],
   variable: '--font-roboto',
+  display: 'swap',
 });
 
 const openSans = Open_Sans({
   subsets: ['latin'],
   variable: '--font-opensans',
+  display: 'swap',
 });
 
 const lato = Lato({
-  weight: ['300', '400', '700'],
   subsets: ['latin'],
+  weight: ['100', '300', '400', '700', '900'],
   variable: '--font-lato',
+  display: 'swap',
 });
 
 const robotoMono = Roboto_Mono({
@@ -46,6 +51,10 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "WhosBetterAt - who's better at what in smash?",
   description: "decide which smash characters are better at what!",
+  icons: {
+    icon: '/favicon.ico',
+  },
+
 };
 
 export default function RootLayout({

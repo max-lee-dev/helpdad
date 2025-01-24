@@ -1,35 +1,53 @@
-import {doc, DocumentData, getDoc} from "@firebase/firestore";
-import {db} from "@/firebase";
+import { collection, addDoc, getDocs, query, updateDoc, orderBy, } from "firebase/firestore";
+import { ToastPosition, ToastOptions } from 'react-toastify';
+import { db } from "@/firebase";
 
-export function getVSString(char1: string, char2: string) {
-  // determine whos first by alphabetical
-  if (char1 < char2) {
-    return `${char1} vs ${char2}`;
-  } else {
-    return `${char2} vs ${char1}`;
+export async function addEntry(id: number, cost: number, date: Date | null) {
+  const entriesRef = collection(db, "entries");
+  const entriesSnapshot = await getDocs(entriesRef); // this is bad but like its just my dad using it
+  let entryExists = false;
+
+  entriesSnapshot.forEach((doc) => {
+    if (doc.data().id === id) {
+      entryExists = true;
+      const newTimesEntered = doc.data().timesEntered + 1;
+      updateDoc(doc.ref, { timesEntered: newTimesEntered, cost, date });
+    }
+  });
+
+  if (!entryExists) {
+    addDoc(entriesRef, { id, cost, timesEntered: 1, date });
   }
 }
 
-export function deconstructVSString(vsString: string) {
-  const split = vsString.split(" vs ");
-  return [split[0], split[1]];
+
+
+export async function getEntries() {
+  const entriesRef = collection(db, "entries"); // Reference to the collection
+  const q = query(entriesRef, orderBy("timesEntered", "desc")); // Replace "field_name" with the field to order by
+  const querySnapshot = await getDocs(q); // Execute the query
+
+
+  // Convert the query results to an array of data
+  const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+  return entries;
 }
+export const toastConfig: ToastOptions = {
+  position: 'top-right' as ToastPosition,
+  autoClose: 1000,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: false,
+  draggable: true,
+  progress: undefined,
+};
 
-export async function getWinrateDocument(skill: string) {
-  const rankingsDocRef = doc(db, "skills", skill, "Matchups", "Winrates");
-  const rankingsDoc = await getDoc(rankingsDocRef);
-  if (rankingsDoc.exists() && rankingsDoc.data()) {
-    return rankingsDoc.data();
-  }
-}
-
-export function findWinrate(winrates: DocumentData, desiredCharacter: string, otherCharacter: string) {
-  const vsString = getVSString(desiredCharacter, otherCharacter);
-  const string = vsString + `-${desiredCharacter}Winrate`
-
-  if (winrates[string]) {
-    return winrates[string];
-  } else {
-    return 1.0;
+export async function updateEntry(id: number, cost: number, date: Date | null) {
+  const entriesRef = collection(db, "entries");
+  const entriesSnapshot = await getDocs(entriesRef);
+  const entryExists = entriesSnapshot.docs.find((doc) => doc.data().id === id);
+  if (entryExists) {
+    updateDoc(entryExists.ref, { cost, date });
   }
 }
