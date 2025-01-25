@@ -3,19 +3,32 @@ import { collection, doc, getDoc, getDocs, orderBy, query, setDoc, updateDoc } f
 import { ToastOptions, ToastPosition } from 'react-toastify';
 import { Entry, ID } from "./types";
 
-export async function addEntry(id: number, cost: number, date: Date | null, entryID: string) {
+export async function addEntry(id: number, cost: number, date: Date | null, entryIDs: string[], quantity: number) {
   const entriesRef = collection(db, "IDs");
   const entriesSnapshot = await getDoc(doc(entriesRef, id.toString()));
+  const stringDate = date?.toLocaleDateString();
+  const newEntries = Array.from({ length: quantity }, (_, i) => {
+    const entryID = entryIDs[i];
+    return {
+      entryID: entryID,
+      id: id,
+      cost: cost,
+      date: stringDate,
+      timestamp: Date.now()
+    };
+  });
+
   if (entriesSnapshot.exists()) {
     const existingData = entriesSnapshot.data();
-    const newEntry = {
+    const updatedID = {
       id: existingData.id,
+      timestamp: Date.now(),
       cost: existingData.cost,
       timesEntered: existingData.timesEntered + 1,
       date: existingData.date.toDate(), // Convert Firestore Timestamp to JavaScript Date
-      entries: [...existingData.entries, { entryID: entryID, id, cost, date }]
+      entries: [...existingData.entries, ...newEntries]
     };
-    updateDoc(entriesSnapshot.ref, newEntry);
+    updateDoc(entriesSnapshot.ref, updatedID);
   }
 }
 
@@ -51,7 +64,7 @@ export async function AddID(id: number, cost: number, date: Date | null, entryID
   const IDsSnapshot = await getDocs(IDsRef);
   const IDExists = IDsSnapshot.docs.find((doc) => doc.data().id === id);
   if (!IDExists) {
-    const newID: ID = { id, cost, date: newDate, entries: [{ entryID: entryID, id, cost, date: newDate }], timesEntered: 1 };
+    const newID: ID = { id, cost, date: newDate, entries: [{ entryID: entryID, id, cost, date: newDate.toLocaleDateString() }], timesEntered: 1 };
     setDoc(doc(IDsRef, id.toString()), newID);
   }
 }
@@ -68,20 +81,3 @@ export async function deleteEntry(id: number, entryID: string) {
   }
 }
 
-interface FirestoreTimestamp {
-  seconds: number;
-  nanoseconds: number;
-}
-
-export function convertFirestoreDateToString(date: Date | string | number | FirestoreTimestamp) {
-  if (date && typeof date === 'object' && 'seconds' in date) {
-    const timestamp = date as FirestoreTimestamp;
-    const newdate = new Date(timestamp.seconds * 1000);
-    // Convert the "seconds" field into a Date object
-    const formattedDate = newdate.toLocaleDateString(); // You can format this differently if needed
-    console.log("Formatted Date:", formattedDate);
-    return formattedDate;
-  } else {
-    console.error("Invalid dateData format:", date);
-  }
-}

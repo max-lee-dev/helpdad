@@ -3,7 +3,7 @@ import "@/app/globals.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, useEffect } from "react";
-import { addEntry, deleteEntry, getIDs, toastConfig, convertFirestoreDateToString } from "@/app/utils/utils";
+import { addEntry, deleteEntry, getIDs, toastConfig } from "@/app/utils/utils";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AddNewIdModal from "@/app/components/AddNewIdModal";
@@ -14,6 +14,7 @@ import { Entry, ID } from "@/app/utils/types";
 export default function Input() {
   const [selectedId, setSelectedId] = useState<number>(0);
   const [cost, setCost] = useState<number>(0);
+  const [quantity, setQuantity] = useState<number>(1); // New state for quantity
   const [sessionEntries, setSessionEntries] = useState<Entry[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [newId, setNewId] = useState<number>(0);
@@ -34,11 +35,12 @@ export default function Input() {
           id: doc.id,
           cost: doc.cost ?? 0,
           timesEntered: doc.timesEntered ?? 0,
-          date: new Date(doc.date),
+          date: doc.date,
           entries: doc.entries.map(entry => ({
             ...entry,
-            date: new Date(entry.date)
-          })) ?? []
+            date: entry.date,
+            timestamp: entry.timestamp || Date.now() // Ensure timestamp is set
+          })).sort((a, b) => b.timestamp - a.timestamp) // Sort by timestamp
         }));
         setIDInfos(tempList);
         setCost(40);
@@ -51,7 +53,7 @@ export default function Input() {
     } catch (error) {
       console.error("Error getting entries:", error);
     }
-  }, [setIDInfos, setCost, setIds, setSelectedId, setSessionEntries]); // Added necessary dependencies
+  }, []);
 
   useEffect(() => {
     const selectedEntry = IDInfos.find((entry) => entry.id === selectedId);
@@ -74,13 +76,19 @@ export default function Input() {
       return;
     }
 
-    const UID = Math.random().toString(36).substr(2, 9);
-    console.log("UID:", UID);
-    addEntry(selectedId, cost, dateToUse, UID); // add a singular entry
-
+    const entryIDs = Array.from({ length: quantity }, () => Math.random().toString(36).substr(2, 9));
+    addEntry(selectedId, cost, dateToUse, entryIDs, quantity); // add multiple entries based on quantity
+    const newEntries = entryIDs.map((entryID) => ({
+      id: selectedId,
+      cost: cost,
+      date: dateToUse.toLocaleDateString(),
+      timestamp: Date.now(),
+      entryID: entryID
+    }));
 
     // frontend, update the UI to show responsiveness
-    const updatedEntries = [...sessionEntries, { id: selectedId, cost: cost, date: dateToUse, timesEntered: 1, entryID: UID }];
+    const updatedEntries = [...sessionEntries, ...newEntries];
+    //
 
     setSessionEntries(updatedEntries);
     toast.success('Entry added successfully!', toastConfig);
@@ -101,12 +109,12 @@ export default function Input() {
           <div className="flex flex-col items-center">
             <div className="flex flex-row justify-between w-full space-x-4">
               <div className="flex flex-row justify-between w-40 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 items-center mt-4 ">
-                <div className="pl-2 flex flex-col">
-                  <p className="text-sm text-gray-500">ID:</p>
+                <div className="flex flex-col">
+                  <p className="pl-2 py-1 text-xs text-gray-500">ID</p>
                   <select
                     value={selectedId}
                     onChange={(e) => setSelectedId(parseInt(e.target.value))}
-                    className="w-fit rounded-md text-black">
+                    className="pl-1 1w-fit rounded-md text-black">
                     {idsList.map((id) => (
                       <option key={id} value={id}>
                         {id}
@@ -114,7 +122,7 @@ export default function Input() {
                     ))}
                   </select>
                 </div>
-                <div className="border-l border-gray-300 border border-[0.5px] h-10 ml-5 " />
+                <div className="border-l border-gray-300 border border-[0.5px] h-10 ml-14 " />
                 <button
                   className="mr-3 text-md"
                   onClick={() => setShowModal(true)}
@@ -135,30 +143,43 @@ export default function Input() {
             )}
           </div>
 
-          <div className="flex w-40 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 items-center mt-4 ">
-            <div className="pl-2 flex flex-col">
-              <p className="text-sm text-gray-500">Price:</p>
-              <input
-                type="text"
-                value={`$${cost}`}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/^\$/, '');
-                  setCost(Number(value));
-                }}
-                placeholder="$200"
-                className="w-full rounded-md text-black"
-              />
+          <div className="flex space-x-1 mt-4 w-40">
+            <div className="flex w-1/2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 items-center">
+              <div className="pl-2 flex flex-col">
+                <p className="py-1 text-xs text-gray-500">Price</p>
+                <input
+                  type="text"
+                  value={`$${cost}`}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/^\$/, '');
+                    setCost(Number(value));
+                  }}
+                  placeholder="$200"
+                  className="w-full rounded-md text-black"
+                />
+              </div>
             </div>
 
-
+            <div className="flex w-1/2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 items-center">
+              <div className="pl-2 flex flex-col">
+                <p className="text-xs py-1 text-gray-500">Quantity</p>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  min="1"
+                  className="w-full rounded-md text-black"
+                />
+              </div>
+            </div>
           </div>
+
           <div className="flex w-40 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 items-center mt-4">
             <div className="ml-2 flex flex-col">
-              <p className="text-sm text-gray-500">Date:</p>
+              <p className="text-xs text-gray-500">Date</p>
               <DatePicker
                 selected={selectedDate}
                 onChange={(date: Date | null) => {
-
                   setSelectedDate(date);
                 }}
                 dateFormat="MM/dd/yyyy"
@@ -185,7 +206,7 @@ export default function Input() {
           {sessionEntries.map((entry) => (
             <div key={entry.id} className="bg-white p-2 rounded-md shadow-md mb-2 w-full text-center">
               <div className="flex flex-row justify-between w-full">
-                #{entry.id}: ${entry.cost} - {convertFirestoreDateToString(entry.date)}
+                #{entry.id}: ${entry.cost} - {entry.date}
                 <button
                   onClick={() => {
                     deleteEntry(entry.id, entry.entryID);

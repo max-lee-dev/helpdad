@@ -1,14 +1,15 @@
-export type Entry = {
-  entryID: string;
+export interface Entry {
   id: number;
   cost: number;
-  date: Date | string | number;
+  date: string;
+  entryID: string;
+  timestamp: number;
 }
 
-export type ID = {
+export interface ID {
   id: number;
   cost: number;
   timesEntered: number;
-  date: Date | string | number;
+  date: Date;
   entries: Entry[];
 }
