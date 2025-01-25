@@ -10,6 +10,7 @@ interface AddNewIdModalProps {
   idsList: number[];
   setSelectedId: (id: number) => void;
   setShowModal: (show: boolean) => void;
+  updatePriceAndHistory: (newId: number, newCost: number) => void;
 }
 
 export default function AddNewIdModal({
@@ -19,6 +20,7 @@ export default function AddNewIdModal({
   idsList,
   setSelectedId,
   setShowModal,
+  updatePriceAndHistory
 }: AddNewIdModalProps) {
   const [newCost, setNewCost] = useState<number>(0);
   const [newDate, setNewDate] = useState<Date | null>(new Date());
@@ -39,8 +41,7 @@ export default function AddNewIdModal({
           await AddID(newId, newCost, dateToUse, UID);
           setIds([...idsList, newId]);
           setSelectedId(newId); // Select the newly added ID
-          // also add an entry
-
+          updatePriceAndHistory(newId, newCost);
         }
         setShowModal(false);
       } catch (error) {

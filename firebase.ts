@@ -1,5 +1,5 @@
-import {initializeApp} from "@firebase/app";
-import {connectFirestoreEmulator, getFirestore} from "@firebase/firestore";
+import { initializeApp } from "@firebase/app";
+import { connectFirestoreEmulator, getFirestore } from "@firebase/firestore";
 
 
 const firebaseConfig = {
@@ -13,7 +13,7 @@ const firebaseConfig = {
 };
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
-export const db = getFirestore(firebaseApp);
+const db = getFirestore(firebaseApp)
 
 
 // Connect to Firestore emulator if running locally
@@ -21,4 +21,5 @@ if (typeof window !== 'undefined' && window.location.hostname === "localhost") {
   connectFirestoreEmulator(db, "localhost", 8080);
 }
 
+export { db };
 

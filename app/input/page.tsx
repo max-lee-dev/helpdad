@@ -2,14 +2,15 @@
 import "@/app/globals.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { addEntry, deleteEntry, getIDs, toastConfig } from "@/app/utils/utils";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AddNewIdModal from "@/app/components/AddNewIdModal";
-import { BiCalendar, BiPlus, BiTrash } from "react-icons/bi";
+import { BiCalendar, BiPlus } from "react-icons/bi";
 import { Entry, ID } from "@/app/utils/types";
-
+import History from "@/app/components/History";
+import Navbar from "../components/Navbar";
 
 export default function Input() {
   const [selectedId, setSelectedId] = useState<number>(0);
@@ -94,17 +95,36 @@ export default function Input() {
     toast.success('Entry added successfully!', toastConfig);
   }
 
+  const updatePriceAndHistory = useCallback((newId: number, newCost: number) => {
+    setCost(newCost); // Update the cost
+    const newEntry = {
+      id: newId,
+      cost: newCost,
+      date: selectedDate?.toLocaleDateString() || new Date().toLocaleDateString(),
+      timestamp: Date.now(),
+      entryID: Math.random().toString(36).substr(2, 9) // Generate a unique entry ID
+    };
+    setSessionEntries((prevEntries) => [...prevEntries, newEntry]); // Update history
+    toast.success('New ID added and history updated!', toastConfig);
+  }, [selectedDate]);
+
+  const handleDeleteEntry = (id: number, entryID: string) => {
+    // Remove the entry from the sessionEntries state
+    deleteEntry(id, entryID);
+    setSessionEntries((prevEntries) => prevEntries.filter(entry => entry.entryID !== entryID));
+    toast.success('Entry deleted successfully!', toastConfig);
+  };
+
   return (
-    <div className={"flex flex-col items-center justify-center min-h-screen py-2 bg-white"}>
+    <div className={" min-h-screen bg-white flex flex-col items-center "}>
       <ToastContainer />
-      <div className="flex flex-row items-center mb-8">
-        <button className="mr-4 text-white hover:text-gray-200">
-          <a href="/">Back</a>
-        </button>
-        <h1 className="text-6xl font-lato text-black drop-shadow-lg font-extrabold">Input</h1>
+      <Navbar />
+      <div className="flex flex-row items-center mb-8 py-2">
+
       </div>
 
-      <div className="flex flex-col items-center justify-center bg-white p-6 rounded-lg shadow-lg">
+      <div className="flex w-[300px] flex-col items-center justify-center bg-white p-6 rounded-lg shadow-lg">
+        <h1 className="text-4xl font-lato text-black  font-extrabold">Input</h1>
         <div className="flex flex-col items-center space-y-4 mb-4">
           <div className="flex flex-col items-center">
             <div className="flex flex-row justify-between w-full space-x-4">
@@ -139,6 +159,7 @@ export default function Input() {
                 idsList={idsList}
                 setSelectedId={setSelectedId}
                 setShowModal={setShowModal}
+                updatePriceAndHistory={updatePriceAndHistory}
               />
             )}
           </div>
@@ -164,9 +185,9 @@ export default function Input() {
               <div className="pl-2 flex flex-col">
                 <p className="text-xs py-1 text-gray-500">Quantity</p>
                 <input
-                  type="number"
+                  type="text"
                   value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  onChange={(e) => setQuantity(parseInt(e.target.value))}
                   min="1"
                   className="w-full rounded-md text-black"
                 />
@@ -200,25 +221,8 @@ export default function Input() {
           Add
         </button>
       </div>
-      <div className="flex flex-col items-center justify-center mt-8">
-
-        <div className="flex text-black flex-col items-center justify-center mt-4">
-          {sessionEntries.map((entry) => (
-            <div key={entry.id} className="bg-white p-2 rounded-md shadow-md mb-2 w-full text-center">
-              <div className="flex flex-row justify-between w-full">
-                #{entry.id}: ${entry.cost} - {entry.date}
-                <button
-                  onClick={() => {
-                    deleteEntry(entry.id, entry.entryID);
-                    setSessionEntries(sessionEntries.filter((e) => e.entryID !== entry.entryID));
-                  }}
-                  className="text-black px-1 mx-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                  <BiTrash className="text-md" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex flex-col items-center justify-center mt-2 min-w-[300px]">
+        <History entries={sessionEntries} onDelete={handleDeleteEntry} />
       </div>
     </div >
   );

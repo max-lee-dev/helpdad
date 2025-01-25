@@ -64,7 +64,7 @@ export async function AddID(id: number, cost: number, date: Date | null, entryID
   const IDsSnapshot = await getDocs(IDsRef);
   const IDExists = IDsSnapshot.docs.find((doc) => doc.data().id === id);
   if (!IDExists) {
-    const newID: ID = { id, cost, date: newDate, entries: [{ entryID: entryID, id, cost, date: newDate.toLocaleDateString() }], timesEntered: 1 };
+    const newID: ID = { id, cost, date: newDate, entries: [{ entryID: entryID, id, cost, date: newDate.toLocaleDateString(), timestamp: Date.now() }], timesEntered: 1 };
     setDoc(doc(IDsRef, id.toString()), newID);
   }
 }
