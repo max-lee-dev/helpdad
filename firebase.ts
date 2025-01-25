@@ -3,7 +3,7 @@ import { connectFirestoreEmulator, getFirestore } from "@firebase/firestore";
 
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBGqZ7eegcJmZ10cel2Z0kcE-gGuJytiBo",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: "helpdad-96fe3.firebaseapp.com",
   projectId: "helpdad-96fe3",
   storageBucket: "helpdad-96fe3.firebasestorage.app",
