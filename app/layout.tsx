@@ -49,8 +49,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WhosBetterAt - who's better at what in smash?",
-  description: "decide which smash characters are better at what!",
+  title: "your welcome father",
+  description: "you better use this",
   icons: {
     icon: '/favicon.ico',
   },
