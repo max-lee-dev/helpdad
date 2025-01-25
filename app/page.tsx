@@ -11,6 +11,6 @@ export default function Home() {
       <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-50">
         <a href={"/dashboard"} className="no-underline font-mono font-bold text-xl text-white">Dashboard</a>
       </button>
-    </div>s
+    </div>
   );
 }
